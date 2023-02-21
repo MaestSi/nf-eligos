@@ -74,7 +74,7 @@ process minimap2 {
     """
         mkdir -p ${params.resultsDir}/${condition}/${sample}/Alignment
 
-        if [[ ${params.spliced_alignment_flag} ]]; then 
+        if ${params.spliced_alignment_flag} ; then 
 		minimap2 -ax splice -k14 -t ${task.cpus} reference.fasta ${fastq} | samtools view -hSb | samtools sort -@ ${task.cpus} -o ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.bam
 		samtools view ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.bam -bh -q {params.min_mapq} -F 2324 | samtools sort -@ ${task.cpus} -o ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.filtered.bam
 	else
