@@ -1,7 +1,4 @@
 # nf-eligos
-A NextFlow pipeline for modifications detection from Nanopore direct RNA-seq data
-
-# nf-eligos
 **nf-eligos** is a [Nextflow](https://www.nextflow.io) pipeline for modifications detection from Nanopore direct RNA-seq data based on [ELIGOS](https://gitlab.com/piroonj/eligos2). Starting from fastq files, it aligns the sequencing reads to a reference sequence with [minimap2](https://github.com/lh3/minimap2) and runs [ELIGOS](https://gitlab.com/piroonj/eligos2) for modifications detection based on the comparison to a baseline sample devoid of one or more modifications.
 
 ## Getting started
