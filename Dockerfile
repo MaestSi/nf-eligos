@@ -11,6 +11,7 @@ RUN apt-get update  && \
     bzip2 \
     git \
     libidn11* \
+    procps \
     nano \
     less \
     wget \
