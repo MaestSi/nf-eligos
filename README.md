@@ -53,6 +53,7 @@ Usage:
         --oddR_thr                                               Odds Ratio threshold
         --esb_thr                                                Threshold on %Error of Specific Bases to be considered for de novo motifs discovery
         --sb                                                     Selected basis for filtering modification of interest
+        --opt_args                                               Other optional arguments (e.g. "-bcf <file.bcf> -m <model.json>")
 ```
 
 ## Citation
