@@ -1,0 +1,2 @@
+sample	condition	fastq
+Test	WT	/path/to/file.fastq
