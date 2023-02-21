@@ -33,7 +33,7 @@ Usage:
 
         Mandatory argument:
         -profile                                                 Configuration profile to use. Available: docker, singularity
-        Other mandatory arguments which may be specified in the nf-m6anet.conf file
+        Other mandatory arguments which may be specified in the nf-eligos.conf file
 
         --samples                                                Path to the tab-separated sample file including sample name, condition and path to fastq file
         --baseline_condition                                     Condition to be considered as the baseling, must match one of the conditions in the samples file
