@@ -103,8 +103,8 @@ process bamMerge {
 	tuple val(condition), val(sample), file('minimap.filtered.*.bam') from minimap2_bamMerge_grouped
 
 	output:
-	val(condition) into bamMerge_eligosPairTmp
-        val(condition) into bamMerge_eligosRbem
+	tuple val(condition), val(sample) into bamMerge_eligosPairTmp
+        tuple val(condition), val(sample) into bamMerge_eligosRbem
 
     script:
     if(params.bamMerge)
@@ -123,13 +123,13 @@ process bamMerge {
 // From a single channel for all the alignments to one channel for each condition
 bamMerge_eligosPairBaseline=Channel.create()
 bamMerge_eligosPairOther=Channel.create()
-bamMerge_eligosPairTmp
+bamMerge_eligosPairTmp.groupTuple(by:0)
 	.choice( bamMerge_eligosPairBaseline, bamMerge_eligosPairOther ) { a -> a[0] == params.baseline_condition ? 0 : 1 } 
 
 process eligosPair {
         input:
-        val(conditionBaseline) from bamMerge_eligosPairBaseline
-        val(conditionTest) from bamMerge_eligosPairOther
+        tuple val('conditionBaseline'), val('sample') from bamMerge_eligosPairBaseline
+        tuple val('conditionTest'), val('sample') from bamMerge_eligosPairOther
         file('file.bed') from bed_file_eligosPair
         file('reference.fasta') from reference_fasta_eligosPair
         output:
@@ -158,7 +158,7 @@ process eligosPair {
 
 process eligosRbem {
         input:
-        val(condition) from bamMerge_eligosRbem
+        tuple val(condition), val(sample) from bamMerge_eligosRbem
         file('file.bed') from bed_file_eligosRbem
         file('reference.fasta') from reference_fasta_eligosRbem
         output:
