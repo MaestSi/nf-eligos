@@ -29,7 +29,6 @@ The nf-eligos pipeline requires you to open nf-eligos.conf configuration file an
 
 ```
 Usage:
-Usage:
         nextflow -c nf-eligos.conf run nf-eligos.nf --samples="/path/to/samples.txt" --resultsDir="/path/to/resultsDir" -profile docker
 
         Mandatory argument:
