@@ -104,7 +104,7 @@ process bamMerge {
 
 	output:
 	tuple val(condition), val(sample) into bamMerge_eligosPairTmp
-        tuple val(condition), val(sample) into bamMerge_eligosRbem
+        tuple val(condition), val(sample) into bamMerge_eligosRbemTmp
 
     script:
     if(params.bamMerge)
@@ -148,19 +148,23 @@ process eligosPair {
                 --pval ${params.pval_thr} --oddR ${params.oddR_thr} --esb ${params.esb_thr} --adjPval ${params.adjPval_thr} \
 		-o ${params.resultsDir}/${conditionTest}/eligosPair ${params.opt_args}
 
-                res=\$(find ${params.resultsDir}/${conditionTest}/eligosPair | grep "\\.txt")
-                eligos2 filter -i \$res -sb ${params.sb} --homopolymer --oddR {params.oddR_thr} --esb {params.esb_thr} --adjPval {params.adjPval_thr}
+                res=\$(find ${params.resultsDir}/${conditionTest}/eligosPair | grep "Ext0\\.txt")
+                eligos2 filter -i \$res -sb ${params.sb} --homopolymer --oddR ${params.oddR_thr} --esb ${params.esb_thr} --adjPval ${params.adjPval_thr}
                 
                 res_filt=\$(find ${params.resultsDir}/${conditionTest}/eligosPair | grep "filtered\\.txt")
                 eligos2 bedgraph -i \$res_filt -sb ${params.sb} --signal oddR --homopolymer
         """
 }
 
+// From a single channel for all the alignments to one channel for each condition
+bamMerge_eligosRbemTmp.groupTuple(by:0)
+.set { bamMerge_eligosRbem }
+
 process eligosRbem {
         input:
         tuple val(condition), val(sample) from bamMerge_eligosRbem
-        file('file.bed') from bed_file_eligosRbem
-        file('reference.fasta') from reference_fasta_eligosRbem
+        each file('file.bed') from bed_file_eligosRbem
+        each file('reference.fasta') from reference_fasta_eligosRbem
         output:
                 
     script:
@@ -176,7 +180,7 @@ process eligosRbem {
                 --min_depth ${params.min_depth} --max_depth ${params.max_depth} \
                 -o ${params.resultsDir}/${condition}/eligosRbem ${params.opt_args}
                
-                res=\$(find ${params.resultsDir}/${condition}/eligosRbem | grep "\\.txt")
+                res=\$(find ${params.resultsDir}/${condition}/eligosRbem | grep "Ext0\\.txt")
                 eligos2 bedgraph -i \$res -sb ${params.sb} --signal ESB --homopolymer
         """
 }
