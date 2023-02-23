@@ -36,7 +36,7 @@ Usage:
         Other mandatory arguments which may be specified in the nf-eligos.conf file
 
         --samples                                                Path to the tab-separated sample file including sample name, condition and path to fastq file
-        --baseline_condition                                     Condition to be considered as the baseling, must match one of the conditions in the samples file
+        --baseline_condition                                     Condition to be considered as the baseline, must match one of the conditions in the samples file
         --min_depth                                              Minimum number of reads
         --max_depth                                              Maximum number of reads
         --spliced_alignment_flag                                 Flag for splice-aware alignment, set to true for genome alignment and to false for transcriptome alignment
