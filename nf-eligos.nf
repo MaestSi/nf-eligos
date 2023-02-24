@@ -76,11 +76,11 @@ process minimap2 {
 
         if ${params.spliced_alignment_flag} ; then 
 		minimap2 -ax splice -k14 -t ${task.cpus} reference.fasta ${fastq} | samtools view -hSb | samtools sort -@ ${task.cpus} -o ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.bam
-		samtools view ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.bam -bh -q {params.min_mapq} -F 2324 | samtools sort -@ ${task.cpus} -o ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.filtered.bam
+		samtools view ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.bam -bh -q ${params.min_mapq} -F 2324 | samtools sort -@ ${task.cpus} -o ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.filtered.bam
      		samtools index -@ ${task.cpus} ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.filtered.bam
 	else
 		minimap2 -ax map-ont -k14 -t ${task.cpus} reference.fasta ${fastq} | samtools view -hSb | samtools sort -@ ${task.cpus} -o ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.bam
-                samtools view ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.bam -bh -q {params.min_mapq} -F 2308 | samtools sort -@ ${task.cpus} -o ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.filtered.bam
+                samtools view ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.bam -bh -q ${params.min_mapq} -F 2308 | samtools sort -@ ${task.cpus} -o ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.filtered.bam
 		samtools index -@ ${task.cpus} ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.filtered.bam
 	fi
 
@@ -130,8 +130,8 @@ process eligosPair {
         input:
         tuple val('conditionBaseline'), val('sample') from bamMerge_eligosPairBaseline
         tuple val('conditionTest'), val('sample') from bamMerge_eligosPairOther
-        file('file.bed') from bed_file_eligosPair
-        file('reference.fasta') from reference_fasta_eligosPair
+        each file('file.bed') from bed_file_eligosPair
+        each file('reference.fasta') from reference_fasta_eligosPair
         output:
 
     script:
