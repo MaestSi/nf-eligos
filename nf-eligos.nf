@@ -104,7 +104,7 @@ process bamMerge {
 
 	output:
 	tuple val(condition), val(sample) into bamMerge_eligosPairTmp
-        tuple val(condition), val(sample) into bamMerge_eligosRbemTmp
+	tuple val(condition), val(sample) into bamMerge_eligosRbemTmp
 
     script:
     if(params.bamMerge)
@@ -123,12 +123,13 @@ process bamMerge {
 // From a single channel for all the alignments to one channel for each condition
 bamMerge_eligosPairBaseline=Channel.create()
 bamMerge_eligosPairOther=Channel.create()
-bamMerge_eligosPairTmp.groupTuple(by:0)
-	.choice( bamMerge_eligosPairBaseline, bamMerge_eligosPairOther ) { a -> a[0] == params.baseline_condition ? 0 : 1 } 
+
+bamMerge_eligosPairTmp
+.choice( bamMerge_eligosPairBaseline, bamMerge_eligosPairOther ) { a -> a[0] == params.baseline_condition ? 0 : 1 } 
 
 process eligosPair {
         input:
-        tuple val('conditionBaseline'), val('sample') from bamMerge_eligosPairBaseline
+        tuple val('conditionBaseline'), val('sample') from bamMerge_eligosPairBaseline.collect()
         tuple val('conditionTest'), val('sample') from bamMerge_eligosPairOther
         each file('file.bed') from bed_file_eligosPair
         each file('reference.fasta') from reference_fasta_eligosPair
