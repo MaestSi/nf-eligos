@@ -149,7 +149,7 @@ process eligosPair {
                 --pval ${params.pval_thr} --oddR ${params.oddR_thr} --esb ${params.esb_thr} --adjPval ${params.adjPval_thr} \
 		-o ${params.resultsDir}/${conditionTest}/eligosPair ${params.opt_args}
 
-                res=\$(find ${params.resultsDir}/${conditionTest}/eligosPair | grep "Ext0\\.txt")
+                res=\$(find ${params.resultsDir}/${conditionTest}/eligosPair | grep "combine\\.txt")
                 eligos2 filter -i \$res -sb ${params.sb} --homopolymer --oddR ${params.oddR_thr} --esb ${params.esb_thr} --adjPval ${params.adjPval_thr}
                 
                 res_filt=\$(find ${params.resultsDir}/${conditionTest}/eligosPair | grep "filtered\\.txt")
