@@ -185,7 +185,7 @@ process eligosRbem {
                 --min_depth ${params.min_depth} --max_depth ${params.max_depth} \
                 -o ${params.resultsDir}/${condition}/eligosRbem ${params.opt_args}
                
-                res=\$(find ${params.resultsDir}/${condition}/eligosRbem | grep "Ext0\\.txt")
+                res=\$(find ${params.resultsDir}/${condition}/eligosRbem | grep "combine\\.txt")
                 eligos2 bedgraph -i \$res -sb ${params.sb} --signal ESB --homopolymer
         """
 	else
