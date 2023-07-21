@@ -45,12 +45,12 @@ if (params.help) {
 // Input of reference fasta
 Channel
 	.fromPath(params.reference_fasta, checkIfExists:true)
-	.into{reference_fasta_minimap2; reference_fasta_eligosPair; reference_fasta_eligosRbem}
+	.set{reference_fasta_ch}
 
 // Input of bed file
 Channel
-        .fromPath(params.bed_file, checkIfExists:true)
-        .into{bed_file_eligosPair; bed_file_eligosRbem}
+	.fromPath(params.bed_file, checkIfExists:true)
+	.set{bed_file_ch}
 
 // Input of sample names, conditions and FASTQ path
 Channel
@@ -62,25 +62,23 @@ Channel
 // Reference alignment
 process minimap2 {
 	input:
-	tuple val(sample), val(condition), val(fastq) from samples_minimap2
-
-	each file('reference.fasta') from reference_fasta_minimap2
-		
+	tuple val(sample), val(condition), val(fastq)
+	each file('reference.fasta')
 	output:
-	tuple val(condition), val(sample), file('minimap.filtered.bam') into minimap2_bamMerge
+	tuple val(condition), val(sample), file('minimap.filtered.bam')
 
-    script:
-    if(params.minimap2)
-    """
-        mkdir -p ${params.resultsDir}/${condition}/${sample}/Alignment
+	script:
+	if(params.minimap2)
+	"""
+	mkdir -p ${params.resultsDir}/${condition}/${sample}/Alignment
 
-        if ${params.spliced_alignment_flag} ; then 
+	if ${params.spliced_alignment_flag} ; then 
 		minimap2 -ax splice -k14 -t ${task.cpus} reference.fasta ${fastq} | samtools view -hSb | samtools sort -@ ${task.cpus} -o ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.bam
 		samtools view ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.bam -bh -q ${params.min_mapq} -F 2308 | samtools sort -@ ${task.cpus} -o ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.filtered.bam
 		samtools index -@ ${task.cpus} ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.filtered.bam
 	else
 		minimap2 -ax map-ont -k14 -t ${task.cpus} reference.fasta ${fastq} | samtools view -hSb | samtools sort -@ ${task.cpus} -o ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.bam
-                samtools view ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.bam -bh -q ${params.min_mapq} -F 2324 | samtools sort -@ ${task.cpus} -o ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.filtered.bam
+		samtools view ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.bam -bh -q ${params.min_mapq} -F 2324 | samtools sort -@ ${task.cpus} -o ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.filtered.bam
 		samtools index -@ ${task.cpus} ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.filtered.bam
 	fi
 
@@ -90,24 +88,19 @@ process minimap2 {
 	else
 	"""
 	ln -s ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.filtered.bam ./minimap.filtered.bam
-        ln -s ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.filtered.bam.bai ./minimap.filtered.bam.bai		
+	ln -s ${params.resultsDir}/${condition}/${sample}/Alignment/minimap.filtered.bam.bai ./minimap.filtered.bam.bai		
 	"""
 }
 
-// From a single channel for all the alignments to one channel for each condition
-minimap2_bamMerge.groupTuple(by:0)
-.set {minimap2_bamMerge_grouped}
-
 process bamMerge {
 	input:
-	tuple val(condition), val(sample), file('minimap.filtered.*.bam') from minimap2_bamMerge_grouped
+	tuple val(condition), val(sample), file('minimap.filtered.*.bam')
 
 	output:
-	tuple val(condition), val(sample) into bamMerge_eligosPairTmp
-	tuple val(condition), val(sample) into bamMerge_eligosRbemTmp
+	tuple val(condition), val(sample)
 
-    script:
-    if(params.bamMerge)
+	script:
+	if(params.bamMerge)
 	"""
 		mkdir -p ${params.resultsDir}/${condition}/Alignment/
 		samtools merge -f ${params.resultsDir}/${condition}/Alignment/${condition}.filt.bam minimap.filtered.*.bam
@@ -120,40 +113,33 @@ process bamMerge {
 	"""
 }
 
-// From a single channel for all the alignments to one channel for each condition
-bamMerge_eligosPairBaseline=Channel.create()
-bamMerge_eligosPairOther=Channel.create()
-
-bamMerge_eligosPairTmp
-.choice( bamMerge_eligosPairBaseline, bamMerge_eligosPairOther ) { a -> a[0] == params.baseline_condition ? 0 : 1 } 
-
 process eligosPair {
-        input:
-        tuple val('conditionBaseline'), val('sample') from bamMerge_eligosPairBaseline.collect()
-        tuple val('conditionTest'), val('sample') from bamMerge_eligosPairOther
-        each file('file.bed') from bed_file_eligosPair
-        each file('reference.fasta') from reference_fasta_eligosPair
-        output:
+	input:
+	tuple val('conditionBaseline'), val('sample')
+	tuple val('conditionTest'), val('sample')
+	each file('file.bed')
+	each file('reference.fasta')
+	output:
 
-    script:
-    if(params.eligosPair)
-        """
-                mkdir -p ${params.resultsDir}/${conditionTest}/eligosPair/
+	script:
+	if(params.eligosPair)
+	"""
+		mkdir -p ${params.resultsDir}/${conditionTest}/eligosPair/
                 
-                eligos2 pair_diff_mod -t ${task.cpus} \
+		eligos2 pair_diff_mod -t ${task.cpus} \
 		-tbam ${params.resultsDir}/${conditionTest}/Alignment/${conditionTest}.filt.bam \
 		-cbam ${params.resultsDir}/${conditionBaseline}/Alignment/${conditionBaseline}.filt.bam \
 		-reg file.bed \
 		-ref reference.fasta \
-                --min_depth ${params.min_depth} --max_depth ${params.max_depth} \
-                --pval ${params.pval_thr} --oddR ${params.oddR_thr} --esb ${params.esb_thr} --adjPval ${params.adjPval_thr} \
+		--min_depth ${params.min_depth} --max_depth ${params.max_depth} \
+		--pval 1 --oddR 0 --esb 0 --adjPval 1 \
 		-o ${params.resultsDir}/${conditionTest}/eligosPair ${params.opt_args}
 
-                res=\$(find ${params.resultsDir}/${conditionTest}/eligosPair | grep "combine\\.txt")
-                eligos2 filter -i \$res -sb ${params.sb} --homopolymer --oddR ${params.oddR_thr} --esb ${params.esb_thr} --adjPval ${params.adjPval_thr}
+		res=\$(find ${params.resultsDir}/${conditionTest}/eligosPair | grep "combine\\.txt")
+		eligos2 filter -i \$res -sb ${params.sb} --homopolymer --oddR ${params.oddR_thr} --esb ${params.esb_thr} --adjPval ${params.adjPval_thr} --pval ${params.pval_thr}
                 
-                res_filt=\$(find ${params.resultsDir}/${conditionTest}/eligosPair | grep "filtered\\.txt")
-                eligos2 bedgraph -i \$res_filt -sb ${params.sb} --signal oddR --homopolymer
+		res_filt=\$(find ${params.resultsDir}/${conditionTest}/eligosPair | grep "filtered\\.txt")
+		eligos2 bedgraph -i \$res_filt -sb ${params.sb} --signal oddR --homopolymer
         """
 	else
 	"""
@@ -161,35 +147,45 @@ process eligosPair {
 	"""
 }
 
-// From a single channel for all the alignments to one channel for each condition
-bamMerge_eligosRbemTmp.groupTuple(by:0)
-.set { bamMerge_eligosRbem }
-
 process eligosRbem {
-        input:
-        tuple val(condition), val(sample) from bamMerge_eligosRbem
-        each file('file.bed') from bed_file_eligosRbem
-        each file('reference.fasta') from reference_fasta_eligosRbem
-        output:
+	input:
+	tuple val(condition), val(sample)
+	each file('file.bed')
+	each file('reference.fasta')
+	output:
                 
     script:
     if(params.eligosRbem)
         """
-                mkdir -p ${params.resultsDir}/${condition}/eligosRbem/
+		mkdir -p ${params.resultsDir}/${condition}/eligosRbem/
                 
-                eligos2 rna_mod -t ${task.cpus} \
-                -i ${params.resultsDir}/${condition}/Alignment/${condition}.filt.bam \
-                -reg file.bed \
-                -ref reference.fasta \
-                --pval ${params.pval_thr} --oddR ${params.oddR_thr} --esb ${params.esb_thr} --adjPval ${params.adjPval_thr} \
-                --min_depth ${params.min_depth} --max_depth ${params.max_depth} \
-                -o ${params.resultsDir}/${condition}/eligosRbem ${params.opt_args}
-               
-                res=\$(find ${params.resultsDir}/${condition}/eligosRbem | grep "combine\\.txt")
-                eligos2 bedgraph -i \$res -sb ${params.sb} --signal ESB --homopolymer
+		eligos2 rna_mod -t ${task.cpus} \
+		-i ${params.resultsDir}/${condition}/Alignment/${condition}.filt.bam \
+		-reg file.bed \
+		-ref reference.fasta \
+		--pval 1 --oddR 0 --esb 0 --adjPval 1 \
+		--min_depth ${params.min_depth} --max_depth ${params.max_depth} \
+		-o ${params.resultsDir}/${condition}/eligosRbem ${params.opt_args}
+
+		res=\$(find ${params.resultsDir}/${condition}/eligosRbem | grep "combine\\.txt")
+		eligos2 filter -i \$res -sb ${params.sb} --homopolymer --oddR ${params.oddR_thr} --esb ${params.esb_thr} --adjPval ${params.adjPval_thr} --pval ${params.pval_thr}
+                
+		res_filt=\$(find ${params.resultsDir}/${condition}/eligosRbem | grep "filtered\\.txt")
+		eligos2 bedgraph -i \$res_filt -sb ${params.sb} --signal ESB --homopolymer
         """
 	else
 	"""
 		echo "Skipped"
 	"""
+}
+
+workflow {
+	minimap2(samples_minimap2, reference_fasta_ch)
+	bamMerge(minimap2.out.groupTuple(by:0))
+	bamMerge.out
+	.branch { bamMerge_eligosPairBaseline: it[0] == params.baseline_condition
+		  bamMerge_eligosPairOther: it[0] != params.baseline_condition } 
+	.set { results }
+	eligosPair(results.bamMerge_eligosPairBaseline, results.bamMerge_eligosPairOther, bed_file_ch, reference_fasta_ch)
+	eligosRbem(results.bamMerge_eligosPairOther, bed_file_ch, reference_fasta_ch)
 }
